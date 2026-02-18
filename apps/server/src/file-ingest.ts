@@ -1,7 +1,7 @@
 // PAI Observability Server — File Ingestion
 // Watches Claude Code JSONL session transcripts and converts to HookEvents
 
-import { watch, readdirSync, statSync, readFileSync, existsSync } from "fs";
+import { watch, readdirSync, statSync, readFileSync, existsSync, openSync, readSync, closeSync } from "fs";
 import { join } from "path";
 import type { HookEvent } from "./types";
 
@@ -272,6 +272,60 @@ export function getEventsByAgent(agentName: string): HookEvent[] {
   );
 }
 
+const BACKFILL_COUNT = parseInt(process.env.BACKFILL_COUNT || "200", 10);
+
+/**
+ * Backfill recent events from JSONL files by reading from the tail.
+ * Reads the last ~100KB of each recent file and parses the last N lines.
+ * Events are added silently (no broadcast) so they don't trigger WebSocket sends.
+ */
+function backfillRecentEvents(files: string[], maxEvents: number): void {
+  const TAIL_BYTES = 100 * 1024; // Read last 100KB of each file
+  const allEvents: HookEvent[] = [];
+
+  for (const filePath of files) {
+    try {
+      const stat = statSync(filePath);
+      if (stat.size === 0) continue;
+
+      const readStart = Math.max(0, stat.size - TAIL_BYTES);
+      const readLength = stat.size - readStart;
+      const buf = Buffer.alloc(readLength);
+      const fd = openSync(filePath, "r");
+      readSync(fd, buf, 0, readLength, readStart);
+      closeSync(fd);
+
+      const content = buf.toString("utf-8");
+      const lines = content.split("\n").filter((l) => l.trim());
+
+      // If we started mid-file, skip the first line (likely partial)
+      const startIdx = readStart > 0 ? 1 : 0;
+
+      for (let i = startIdx; i < lines.length; i++) {
+        const event = parseJSONLLine(lines[i]);
+        if (event) allEvents.push(event);
+      }
+    } catch {
+      // File may not be readable
+    }
+  }
+
+  // Sort by timestamp and take the last N
+  allEvents.sort((a, b) => a.timestamp - b.timestamp);
+  const backfilled = allEvents.slice(-maxEvents);
+
+  // Reset event counter to account for backfilled events
+  eventCounter = 0;
+  for (const event of backfilled) {
+    event.id = ++eventCounter;
+    events.push(event);
+  }
+
+  if (backfilled.length > 0) {
+    console.log(`[file-ingest] Backfilled ${backfilled.length} recent events from ${files.length} files`);
+  }
+}
+
 export function startFileIngestion(
   onEvent: (event: HookEvent) => void
 ): void {
@@ -287,6 +341,12 @@ export function startFileIngestion(
 
   // Watch 20 most recent JSONL files — set positions to END (only new events)
   const recentFiles = getRecentJSONLFiles(PROJECTS_DIR, 20);
+
+  // Backfill recent events from existing files (fixes empty dashboard on startup)
+  if (BACKFILL_COUNT > 0) {
+    backfillRecentEvents(recentFiles, BACKFILL_COUNT);
+  }
+
   for (const filePath of recentFiles) {
     try {
       const stat = statSync(filePath);

@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watchEffect } from 'vue'
 import { useWebSocket } from './composables/useWebSocket'
 import { useEventSearch } from './composables/useEventSearch'
+import { useMediaQuery } from './composables/useMediaQuery'
 import FilterPanel from './components/FilterPanel.vue'
 import LivePulseChart from './components/LivePulseChart.vue'
 import EventTimeline from './components/EventTimeline.vue'
@@ -15,6 +16,7 @@ import StatBadge from './components/stats/StatBadge.vue'
 
 const { events, tasks, connected, eventsPerMinute } = useWebSocket()
 const { searchQuery, filteredEvents, matchCount, isSearching } = useEventSearch(events)
+const { isLg } = useMediaQuery()
 
 // Filter state
 const sourceFilter = ref('')
@@ -24,8 +26,20 @@ const typeFilter = ref('')
 // View tabs
 const activeTab = ref<'timeline' | 'swimlanes' | 'chat'>('timeline')
 
-// Stats sidebar toggle
+// Stats sidebar toggle — auto-hide on small viewports
 const showStats = ref(true)
+const userToggledStats = ref(false)
+
+watchEffect(() => {
+  if (!userToggledStats.value) {
+    showStats.value = isLg.value
+  }
+})
+
+function toggleStats() {
+  userToggledStats.value = true
+  showStats.value = !showStats.value
+}
 
 // Apply search filter to events passed to views
 const displayEvents = computed(() => {
@@ -128,7 +142,7 @@ const tabs = [
 
         <!-- Stats toggle -->
         <button
-          @click="showStats = !showStats"
+          @click="toggleStats()"
           class="ml-2 px-2 py-1 text-xs rounded transition-colors"
           :class="showStats
             ? 'bg-tn-yellow/20 text-tn-yellow border border-tn-yellow/30'

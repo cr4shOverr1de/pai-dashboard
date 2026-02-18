@@ -1,0 +1,28 @@
+# PAI Observability Dashboard — systemd user service
+# Install: mkdir -p ~/.config/systemd/user && cp pai-dashboard.service ~/.config/systemd/user/
+# Enable:  systemctl --user enable pai-dashboard
+# Start:   systemctl --user start pai-dashboard
+# Logs:    journalctl --user -u pai-dashboard -f
+
+[Unit]
+Description=PAI Observability Dashboard (Server + Client)
+After=network.target
+
+[Service]
+Type=forking
+WorkingDirectory=%h/projects/pai-dashboard
+ExecStart=%h/projects/pai-dashboard/manage.sh start
+ExecStop=%h/projects/pai-dashboard/manage.sh stop
+ExecReload=%h/projects/pai-dashboard/manage.sh restart
+PIDFile=%h/projects/pai-dashboard/apps/server/server.pid
+Restart=on-failure
+RestartSec=5
+
+# Environment
+Environment=HOME=%h
+Environment=USER=%u
+Environment=PATH=%h/.bun/bin:/usr/local/bin:/usr/bin:/bin
+Environment=BACKFILL_COUNT=200
+
+[Install]
+WantedBy=default.target
