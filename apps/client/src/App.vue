@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useWebSocket } from './composables/useWebSocket'
+import { useEventSearch } from './composables/useEventSearch'
 import FilterPanel from './components/FilterPanel.vue'
 import LivePulseChart from './components/LivePulseChart.vue'
 import EventTimeline from './components/EventTimeline.vue'
 import AgentSwimLaneContainer from './components/AgentSwimLaneContainer.vue'
+import ChatTranscript from './components/ChatTranscript.vue'
 import ToastNotification from './components/ToastNotification.vue'
 import IntensityBar from './components/IntensityBar.vue'
 import TopToolsWidget from './components/widgets/TopToolsWidget.vue'
@@ -12,6 +14,7 @@ import EventTypesWidget from './components/widgets/EventTypesWidget.vue'
 import StatBadge from './components/stats/StatBadge.vue'
 
 const { events, tasks, connected, eventsPerMinute } = useWebSocket()
+const { searchQuery, filteredEvents, matchCount, isSearching } = useEventSearch(events)
 
 // Filter state
 const sourceFilter = ref('')
@@ -19,10 +22,22 @@ const sessionFilter = ref('')
 const typeFilter = ref('')
 
 // View tabs
-const activeTab = ref<'timeline' | 'swimlanes'>('timeline')
+const activeTab = ref<'timeline' | 'swimlanes' | 'chat'>('timeline')
 
 // Stats sidebar toggle
 const showStats = ref(true)
+
+// Apply search filter to events passed to views
+const displayEvents = computed(() => {
+  if (isSearching.value) return filteredEvents.value
+  return events.value
+})
+
+const tabs = [
+  { id: 'timeline' as const, label: 'Timeline', color: 'blue' },
+  { id: 'swimlanes' as const, label: 'Swim Lanes', color: 'magenta' },
+  { id: 'chat' as const, label: 'Chat', color: 'cyan' },
+]
 </script>
 
 <template>
@@ -49,6 +64,22 @@ const showStats = ref(true)
       </div>
 
       <div class="flex items-center gap-3">
+        <!-- Search bar -->
+        <div class="relative">
+          <input
+            v-model="searchQuery"
+            type="text"
+            placeholder="Search events..."
+            class="w-48 px-3 py-1 text-xs rounded-lg bg-tn-bg-darker/80 border border-tn-fg-gutter/30 text-tn-fg placeholder-tn-comment/50 focus:outline-none focus:border-tn-blue/40 transition-colors"
+          />
+          <span
+            v-if="isSearching"
+            class="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-tn-comment"
+          >
+            {{ matchCount }}
+          </span>
+        </div>
+
         <!-- Intensity bar -->
         <div class="w-40 hidden sm:block">
           <IntensityBar :events-per-minute="eventsPerMinute" />
@@ -75,22 +106,24 @@ const showStats = ref(true)
       <div class="flex items-center gap-1">
         <!-- View tabs -->
         <button
-          @click="activeTab = 'timeline'"
-          class="px-2.5 py-1 text-xs rounded-l transition-colors"
-          :class="activeTab === 'timeline'
-            ? 'bg-tn-blue/20 text-tn-blue border border-tn-blue/30'
-            : 'text-tn-comment hover:text-tn-fg border border-tn-fg-gutter/30'"
+          v-for="(tab, idx) in tabs"
+          :key="tab.id"
+          @click="activeTab = tab.id"
+          class="px-2.5 py-1 text-xs transition-colors"
+          :class="[
+            activeTab === tab.id
+              ? `bg-tn-${tab.color}/20 text-tn-${tab.color} border border-tn-${tab.color}/30`
+              : 'text-tn-comment hover:text-tn-fg border border-tn-fg-gutter/30',
+            idx === 0 ? 'rounded-l' : '',
+            idx === tabs.length - 1 ? 'rounded-r' : '',
+          ]"
+          :style="activeTab === tab.id ? {
+            backgroundColor: tab.color === 'blue' ? 'rgba(122,162,247,0.2)' : tab.color === 'magenta' ? 'rgba(187,154,247,0.2)' : 'rgba(125,207,255,0.2)',
+            color: tab.color === 'blue' ? '#7aa2f7' : tab.color === 'magenta' ? '#bb9af7' : '#7dcfff',
+            borderColor: tab.color === 'blue' ? 'rgba(122,162,247,0.3)' : tab.color === 'magenta' ? 'rgba(187,154,247,0.3)' : 'rgba(125,207,255,0.3)',
+          } : {}"
         >
-          Timeline
-        </button>
-        <button
-          @click="activeTab = 'swimlanes'"
-          class="px-2.5 py-1 text-xs rounded-r transition-colors"
-          :class="activeTab === 'swimlanes'
-            ? 'bg-tn-magenta/20 text-tn-magenta border border-tn-magenta/30'
-            : 'text-tn-comment hover:text-tn-fg border border-tn-fg-gutter/30'"
-        >
-          Swim Lanes
+          {{ tab.label }}
         </button>
 
         <!-- Stats toggle -->
@@ -118,17 +151,22 @@ const showStats = ref(true)
       <div class="flex-1 min-w-0">
         <EventTimeline
           v-if="activeTab === 'timeline'"
-          :events="events"
+          :events="displayEvents"
           :source-filter="sourceFilter"
           :session-filter="sessionFilter"
           :type-filter="typeFilter"
         />
         <AgentSwimLaneContainer
-          v-else
-          :events="events"
+          v-else-if="activeTab === 'swimlanes'"
+          :events="displayEvents"
           :source-filter="sourceFilter"
           :session-filter="sessionFilter"
           :type-filter="typeFilter"
+        />
+        <ChatTranscript
+          v-else
+          :events="displayEvents"
+          :session-filter="sessionFilter"
         />
       </div>
 

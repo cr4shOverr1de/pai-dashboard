@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { useEventColors } from '../composables/useEventColors'
 import { useEventEmojis } from '../composables/useEventEmojis'
+import { obfuscatePayload } from '../utils/obfuscate'
 import type { HookEvent } from '../types'
 
 const props = defineProps<{ event: HookEvent }>()
@@ -14,7 +15,7 @@ function formatTime(ts: number): string {
 }
 
 function formatPayload(payload: Record<string, any>): string {
-  return JSON.stringify(payload, null, 2)
+  return JSON.stringify(obfuscatePayload(payload), null, 2)
 }
 
 function getDisplayType(event: HookEvent): string {

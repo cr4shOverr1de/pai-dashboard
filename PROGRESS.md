@@ -67,22 +67,27 @@ Last updated: 2026-02-17
 
 **Verified 2026-02-17:** All components rendering correctly, both views functional, no Phase 2 regressions.
 
-### Phase 4: Chat, Themes & AI Features — NOT STARTED
+### Phase 4: Chat, Search & Security — COMPLETE
 
 | Component | File | Status | Description |
 |-----------|------|--------|-------------|
-| ChatTranscript | `src/components/ChatTranscript.vue` | Todo | Inline chat transcript viewer |
-| ChatTranscriptModal | `src/components/ChatTranscriptModal.vue` | Todo | Full-screen chat view |
-| ThemeManager | `src/components/ThemeManager.vue` | Todo | Theme CRUD UI |
-| ThemePreview | `src/components/ThemePreview.vue` | Todo | Live color preview |
-| db.ts | `apps/server/src/db.ts` | Todo | SQLite for themes |
-| theme.ts | `apps/server/src/theme.ts` | Todo | Theme CRUD operations |
-| obfuscate.ts | `src/utils/obfuscate.ts` | Todo | Security: redact API keys, tokens, PII |
-| haiku.ts | `src/utils/haiku.ts` | Todo | Claude Haiku API for event summaries |
-| useHITLNotifications | `src/composables/useHITLNotifications.ts` | Todo | Browser notifications for agent questions |
-| useTimelineIntelligence | `src/composables/useTimelineIntelligence.ts` | Todo | AI-powered event clustering |
-| useBackgroundTasks | `src/composables/useBackgroundTasks.ts` | Todo | Background task state composable |
-| useAdvancedMetrics | `src/composables/useAdvancedMetrics.ts` | Todo | Token usage, tool stats |
+| ChatTranscript | `src/components/ChatTranscript.vue` | Done | Chat bubble view with user/assistant/tool messages, obfuscation |
+| obfuscate.ts | `src/utils/obfuscate.ts` | Done | Redacts API keys, bearer tokens, JWTs, emails, hex secrets |
+| useBackgroundTasks | `src/composables/useBackgroundTasks.ts` | Done | Reactive task state with status filtering |
+| useAdvancedMetrics | `src/composables/useAdvancedMetrics.ts` | Done | Aggregate metrics: tools, agents, sessions, duration, trend |
+| useEventSearch | `src/composables/useEventSearch.ts` | Done | Full-text search with 200ms debounce across event fields |
+| Search bar | `src/App.vue` | Done | Header search input integrated with useEventSearch |
+| Chat tab | `src/App.vue` | Done | Third view tab alongside Timeline and Swim Lanes |
+| ChatTranscriptModal | `src/components/ChatTranscriptModal.vue` | Deferred | Full-screen chat (ChatTranscript inline is sufficient) |
+| ThemeManager | `src/components/ThemeManager.vue` | Deferred | Needs SQLite backend |
+| ThemePreview | `src/components/ThemePreview.vue` | Deferred | Needs theme system |
+| db.ts | `apps/server/src/db.ts` | Deferred | SQLite persistence (Phase 5) |
+| theme.ts | `apps/server/src/theme.ts` | Deferred | Needs db.ts |
+| haiku.ts | `src/utils/haiku.ts` | Deferred | Needs API key management |
+| useHITLNotifications | `src/composables/useHITLNotifications.ts` | Deferred | Browser Notification API (Phase 5) |
+| useTimelineIntelligence | `src/composables/useTimelineIntelligence.ts` | Deferred | AI clustering (Phase 5) |
+
+**Verified 2026-02-17:** Chat transcript renders messages in bubble format, search filters events across all views, obfuscation redacts secrets in expanded payloads.
 
 ### Phase 5: Remote Agents, Polish & Production — NOT STARTED
 
