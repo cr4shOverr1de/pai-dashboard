@@ -1,0 +1,144 @@
+# PAI Observability Server — Progress Tracker
+
+Last updated: 2026-02-17
+
+## Implementation Phases
+
+### Phase 1: Backend Core — COMPLETE
+
+| Component | File | Status | Evidence |
+|-----------|------|--------|----------|
+| Types | `apps/server/src/types.ts` | Done | HookEvent, BackgroundTask, FilterOptions, WebSocketMessage |
+| File Ingestion | `apps/server/src/file-ingest.ts` | Done | Watches 20 JSONL files, byte-position tracking, agent enrichment |
+| Task Watcher | `apps/server/src/task-watcher.ts` | Done | Monitors /tmp/claude/ tasks, pattern-based description inference |
+| HTTP + WebSocket Server | `apps/server/src/index.ts` | Done | Bun.serve on port 4000, REST + WebSocket /stream |
+| Lifecycle Script | `manage.sh` | Done | start/stop/restart/status for both server + client |
+
+**Verified:** Server starts cleanly, captures real-time events from active Claude sessions, REST endpoints respond correctly, WebSocket sends initial event payload.
+
+**Bug fixed during build:** `file-ingest.ts` originally used `String.slice(bytePosition)` for reading new content — but `stat.size` returns bytes while `String.slice()` operates on characters. Fixed to use `Buffer.subarray()` for byte-accurate reads.
+
+### Phase 2: Frontend Shell + Core Components — COMPLETE (needs browser verification)
+
+| Component | File | Status | Notes |
+|-----------|------|--------|-------|
+| Vue 3 + Vite scaffold | `apps/client/` | Done | Compiles, starts on port 5172 in ~660ms |
+| Tailwind + Tokyo Night | `tailwind.config.js`, `style.css` | Done | Full Tokyo Night palette, glass morphism |
+| Client types | `src/types.ts` | Done | HookEvent, BackgroundTask, HeatLevel |
+| WebSocket composable | `src/composables/useWebSocket.ts` | Done | Auto-connect, reconnect, event buffering |
+| Event colors | `src/composables/useEventColors.ts` | Done | Tokyo Night palette for events + agents |
+| Heat level | `src/composables/useHeatLevel.ts` | Done | 6-level: Cold→Cool→Warm→Hot→Fire→Inferno |
+| Event emojis | `src/composables/useEventEmojis.ts` | Done | Tool + event type emoji indicators |
+| EventRow | `src/components/EventRow.vue` | Done | Timestamp, agent dot, type badge, preview, expandable payload |
+| EventTimeline | `src/components/EventTimeline.vue` | Done | Filtered scrollable feed with auto-scroll toggle |
+| FilterPanel | `src/components/FilterPanel.vue` | Done | Source/session/type dropdowns with clear button |
+| LivePulseChart | `src/components/LivePulseChart.vue` | Done | Canvas bars per agent, time windows, heat display |
+| App.vue | `src/App.vue` | Done | Root layout: header, filters, chart, timeline |
+
+**Needs verification:** Open http://localhost:5172 in browser while server is running to confirm:
+- [ ] WebSocket connects and receives events
+- [ ] EventTimeline renders events with color-coded agents
+- [ ] FilterPanel dropdowns populate and filter correctly
+- [ ] LivePulseChart canvas renders activity visualization
+
+---
+
+### Phase 3: Advanced Visualization — NOT STARTED
+
+| Component | File | Status | Description |
+|-----------|------|--------|-------------|
+| AgentSwimLane | `src/components/AgentSwimLane.vue` | Todo | Per-agent event lane |
+| AgentSwimLaneContainer | `src/components/AgentSwimLaneContainer.vue` | Todo | Multi-agent comparison view |
+| StickScrollButton | `src/components/StickScrollButton.vue` | Todo | Standalone auto-scroll toggle |
+| ToastNotification | `src/components/ToastNotification.vue` | Todo | Agent appearance alerts |
+| IntensityBar | `src/components/IntensityBar.vue` | Todo | Heat level color indicator bar |
+| StatBadge | `src/components/stats/StatBadge.vue` | Todo | Metric badge component |
+| AgentActivityWidget | `src/components/widgets/AgentActivityWidget.vue` | Todo | Agent event distribution |
+| EventTypesWidget | `src/components/widgets/EventTypesWidget.vue` | Todo | Event type breakdown |
+| SessionTimelineWidget | `src/components/widgets/SessionTimelineWidget.vue` | Todo | Session activity timeline |
+| TokenUsageWidget | `src/components/widgets/TokenUsageWidget.vue` | Todo | Token consumption display |
+| TopToolsWidget | `src/components/widgets/TopToolsWidget.vue` | Todo | Most-used tools ranking |
+
+### Phase 4: Chat, Themes & AI Features — NOT STARTED
+
+| Component | File | Status | Description |
+|-----------|------|--------|-------------|
+| ChatTranscript | `src/components/ChatTranscript.vue` | Todo | Inline chat transcript viewer |
+| ChatTranscriptModal | `src/components/ChatTranscriptModal.vue` | Todo | Full-screen chat view |
+| ThemeManager | `src/components/ThemeManager.vue` | Todo | Theme CRUD UI |
+| ThemePreview | `src/components/ThemePreview.vue` | Todo | Live color preview |
+| db.ts | `apps/server/src/db.ts` | Todo | SQLite for themes |
+| theme.ts | `apps/server/src/theme.ts` | Todo | Theme CRUD operations |
+| obfuscate.ts | `src/utils/obfuscate.ts` | Todo | Security: redact API keys, tokens, PII |
+| haiku.ts | `src/utils/haiku.ts` | Todo | Claude Haiku API for event summaries |
+| useHITLNotifications | `src/composables/useHITLNotifications.ts` | Todo | Browser notifications for agent questions |
+| useTimelineIntelligence | `src/composables/useTimelineIntelligence.ts` | Todo | AI-powered event clustering |
+| useBackgroundTasks | `src/composables/useBackgroundTasks.ts` | Todo | Background task state composable |
+| useAdvancedMetrics | `src/composables/useAdvancedMetrics.ts` | Todo | Token usage, tool stats |
+
+### Phase 5: Remote Agents, Polish & Production — NOT STARTED
+
+| Component | File | Status | Description |
+|-----------|------|--------|-------------|
+| RemoteAgentDashboard | `src/components/RemoteAgentDashboard.vue` | Todo | Remote agent monitoring tab |
+| TabNavigation | `src/components/TabNavigation.vue` | Todo | Local/Remote tab switcher |
+| useRemoteAgent | `src/composables/useRemoteAgent.ts` | Todo | Remote agent connection |
+| useMediaQuery | `src/composables/useMediaQuery.ts` | Todo | Responsive breakpoints |
+| useEventSearch | `src/composables/useEventSearch.ts` | Todo | Full-text event search |
+| useThemes | `src/composables/useThemes.ts` | Todo | Theme switching/persistence |
+| useAgentChartData | `src/composables/useAgentChartData.ts` | Todo | Per-agent chart data |
+| useAgentContext | `src/composables/useAgentContext.ts` | Todo | Agent context enrichment |
+| useChartData | `src/composables/useChartData.ts` | Todo | General chart data processing |
+| chartRenderer.ts | `src/utils/chartRenderer.ts` | Todo | Reusable canvas chart drawing |
+| Systemd service | N/A | Todo | Auto-start on boot |
+| Event persistence | N/A | Todo | Optional SQLite for surviving restarts |
+
+---
+
+## ISC Verification Status
+
+### Passing (8/12)
+
+- [x] ISC-C14: Bun server starts on port 4000 without errors
+- [x] ISC-C15: WebSocket /stream accepts connections and sends initial events
+- [x] ISC-C16: file-ingest watches JSONL transcripts from Claude projects
+- [x] ISC-C17: REST endpoint /events/recent returns JSON event data
+- [x] ISC-C18: task-watcher monitors /tmp/claude/ for background tasks
+- [x] ISC-C19: Vue 3 dev server starts on port 5172 without errors
+- [x] ISC-A3: No macOS-specific code in any implementation file
+- [x] ISC-A4: No modifications to existing PAI hooks or infrastructure
+
+### Pending Browser Verification (4/12)
+
+- [ ] ISC-C20: WebSocket composable connects to backend and receives events
+- [ ] ISC-C21: EventTimeline renders real-time events with agent colors
+- [ ] ISC-C22: FilterPanel filters events by source session and type
+- [ ] ISC-C23: LivePulseChart shows canvas-based real-time activity visualization
+
+---
+
+## Known Issues
+
+| # | Issue | Severity | Description | Fix |
+|---|-------|----------|-------------|-----|
+| 1 | Events lost on server restart | Medium | In-memory event store resets when server restarts. Page refresh after restart shows fewer/no events. | Add optional SQLite persistence (Phase 5) or read recent history on startup |
+| 2 | Task dir may not exist | Low | `/tmp/claude/` tasks directory only exists when Claude spawns background agents. Server handles gracefully. | Already handled — periodic check for dir creation |
+| 3 | No historical event loading | Medium | Server starts from END of JSONL files — events before server start are not visible. | Option to backfill N events from most recent files on startup |
+
+---
+
+## Key Decisions
+
+1. **Zero custom hooks** — Dashboard reads Claude Code's native JSONL transcripts directly via `file-ingest.ts`. No new hooks added to settings.json.
+2. **In-memory first** — Events stored in-memory (max 1000) for simplicity. SQLite persistence deferred to Phase 5.
+3. **Byte-position tracking** — Uses `Buffer.subarray()` not `String.slice()` for reading new JSONL content. Critical fix for correct byte-offset tracking.
+4. **2-second polling backup** — `fs.watch` + 2-second `setInterval` polling as fallback. Linux inotify can miss rapid writes.
+5. **Vue 3 Composition API** — No Pinia (state library). All state via `ref()` composables. Matches Daniel's original architecture.
+
+---
+
+## Reference
+
+- **Full PRD:** `PRD-20260217-pai-observability-server.md` (1100 lines — complete architecture from actual PAI source)
+- **Original source:** `Releases/v2.3/.claude/Observability/` in github.com/danielmiessler/PAI
+- **Reference impl:** github.com/disler/claude-code-hooks-multi-agent-observability

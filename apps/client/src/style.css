@@ -1,0 +1,83 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --tn-bg: #1a1b26;
+  --tn-bg-dark: #16161e;
+  --tn-bg-darker: #0f0f14;
+  --tn-fg: #c0caf5;
+  --tn-comment: #565f89;
+  --tn-blue: #7aa2f7;
+  --tn-cyan: #7dcfff;
+  --tn-magenta: #bb9af7;
+  --tn-orange: #ff9e64;
+  --tn-yellow: #e0af68;
+  --tn-green: #9ece6a;
+  --tn-red: #f7768e;
+  --tn-purple: #9d7cd8;
+  --tn-teal: #1abc9c;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #app {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  background: linear-gradient(135deg, #1a1b26 0%, #16161e 50%, #0f0f14 100%);
+  color: #c0caf5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Glass panel styling */
+.glass-panel {
+  background: rgba(26, 27, 38, 0.6);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(122, 162, 247, 0.1);
+  border-radius: 12px;
+}
+
+.glass-panel-elevated {
+  background: rgba(26, 27, 38, 0.8);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(122, 162, 247, 0.15);
+  border-radius: 12px;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(86, 95, 137, 0.4);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(86, 95, 137, 0.6);
+}
+
+/* Subtle dot pattern overlay */
+#app::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: radial-gradient(circle, rgba(122, 162, 247, 0.02) 1px, transparent 1px);
+  background-size: 24px 24px;
+  pointer-events: none;
+  z-index: 0;
+}

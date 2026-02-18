@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.vite/
+*.log
+.env
+.DS_Store
+themes.db
+*.pid
+bun.lock
+bun.lockb
+notes.txt
+observability_server_notes.txt
