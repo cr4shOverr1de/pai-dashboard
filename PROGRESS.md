@@ -169,6 +169,47 @@ Last updated: 2026-02-17
 
 ---
 
+## TODO / Bugs
+
+| # | Type | Priority | Description | Notes |
+|---|------|----------|-------------|-------|
+| T1 | Bug | High | **Empty `agent_progress` events flood timeline** — Long-running sub-agent tasks (background agents, Task tool agents) generate repeated `agent_progress` events with empty `{}` payload. Example: `23:21:34 claude agent_progress {}`. These appear dozens of times in a row, creating noise. | **Likely cause:** Claude Code writes progress heartbeats to the JSONL transcript while sub-agents are running. The `progress` event type from the JSONL has a `data` field that maps to `agent_progress` in our parser, but when the sub-agent has no new status to report, the payload is empty. **Fix options:** (1) Filter in `parseJSONLLine()` — skip events where `hookEventType === 'agent_progress'` and payload is empty `{}`. (2) Client-side dedup — collapse consecutive identical events into "x12" badge. (3) Rate-limit — only emit agent_progress events if >2s since last one for same session. Option 1 is simplest. |
+| T2 | Enhancement | Medium | **Collapse repeated events** — Even after filtering empty agent_progress, add client-side consecutive event grouping (show "x5" badge for repeated identical events) | Would reduce visual noise for any repetitive event pattern |
+| T3 | Enhancement | Medium | **HITL browser notifications** — Use Browser Notification API to alert when Claude asks a question (user-type events with AskUserQuestion tool use) | Useful when dashboard is in background tab during long agent runs |
+| T4 | Enhancement | Low | **Token usage tracking** — Extract `usage.input_tokens` and `usage.output_tokens` from assistant message metadata in JSONL | Data is in the JSONL already, just needs parser support + TokenUsageWidget |
+| T5 | Enhancement | Low | **SQLite event persistence** — Optional SQLite storage for events that survive full server restarts | Backfill from JSONL mostly solves this; SQLite would add faster queries + historical analytics |
+| T6 | Enhancement | Low | **Theme system** — Support multiple color themes (Tokyo Night, Dracula, Catppuccin, Nord) with live preview | Needs SQLite backend for persistence, CSS variable system for runtime switching |
+| T7 | Feature | Low | **AI event summaries** — Use Claude Haiku to generate natural-language summaries of event clusters | Needs API key management, rate limiting, cost awareness |
+| T8 | Feature | Low | **Remote agent dashboard** — Monitor Claude remote sessions (claude.ai background agents) | Blocked: requires Claude remote session API which isn't publicly available yet |
+
+---
+
+## Future Feature Ideas
+
+1. **Event clustering / timeline intelligence** — Group related events (e.g., a tool_use + tool_result pair) into collapsible "action" blocks
+2. **Session comparison** — Side-by-side view of two sessions to compare agent behavior
+3. **Export** — Download events as CSV/JSON for external analysis
+4. **Webhook notifications** — POST to Slack/Discord when specific event patterns occur (e.g., error events, new agent spawns)
+5. **Cost estimation** — Estimate API costs per session based on token usage from the JSONL metadata
+6. **Agent flow diagram** — Mermaid.js visualization of agent spawn chains (who spawned whom)
+7. **Performance profiling** — Track tool execution times (time between tool_use and tool_result events)
+8. **Bookmark events** — Click to bookmark interesting events for later review
+9. **Event replay** — Playback historical events at adjustable speed to re-watch a session
+10. **Multi-machine support** — Connect to remote PAI servers over SSH tunnel or network
+
+---
+
+## Completion Log
+
+| Date | Commit | What was done |
+|------|--------|---------------|
+| 2026-02-17 | `c1c6088` | Phase 1+2: Backend (Bun server, file-ingest, task-watcher) + Frontend (Vue 3 shell, EventTimeline, FilterPanel, LivePulseChart, 4 composables). 32 files, 3275 lines. |
+| 2026-02-17 | `609caf2` | Phase 3: AgentSwimLane, ToastNotification, IntensityBar, StatBadge, TopToolsWidget, EventTypesWidget. Tab nav + stats sidebar in App.vue. 9 files, 647 lines added. |
+| 2026-02-17 | `395222c` | Phase 4: ChatTranscript, obfuscate.ts, useEventSearch, useBackgroundTasks, useAdvancedMetrics. Search bar + Chat tab. 8 files, 509 lines added. |
+| 2026-02-17 | `d8b9b94` | Phase 5: Event backfill (200 events on startup), useMediaQuery, responsive sidebar, systemd service. Fixed Known Issues #1 and #3. 5 files, 202 lines added. |
+
+---
+
 ## Key Decisions
 
 1. **Zero custom hooks** — Dashboard reads Claude Code's native JSONL transcripts directly via `file-ingest.ts`. No new hooks added to settings.json.
